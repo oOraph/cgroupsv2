@@ -1,0 +1,40 @@
+mkdir /sys/fs/cgroup/raph1
+mkdir ~/bpf
+apt-get install libbpf-dev clang linux-tools-aws
+(reboot needed if running kernel is not the latest one installed)
+clang -O2 -target bpf -c prog1.c -o prog1.o
+ln -s /usr/include/x86_64-linux-gnu/asm/ /usr/include/asm
+
+set a process in the given cgroup (like another bash session or even self process for example)
+echo $process >> /sys/fs/cgroup/raph1/cgroup.procs
+
+bpftool prog load ./prog1.o /sys/fs/bpf/prog1 type cgroup/dev
+
+
+bpftool prog [list] to show all loaded program and get our program info (id, name, tag whatever can be passed in the following command...)
+bpftool cgroup attach /sys/fs/cgroup/raph1/ cgroup_device name bpf_prog1
+
+NOTE: if we attempt to load several times the same program then when listing program you see sth like:
+80: cgroup_device  name bpf_prog1  tag f32efaded95a7433  gpl
+	loaded_at 2023-10-12T08:21:27+0000  uid 0
+	xlated 88B  jited 62B  memlock 4096B
+86: cgroup_device  name bpf_prog1  tag f32efaded95a7433  gpl
+	loaded_at 2023-10-12T08:35:21+0000  uid 0
+	xlated 88B  jited 62B  memlock 4096B
+
+-> so everything in common but the id thus if you try to attach detach a program you need to provide the id so as to not be ambiguous
+bpftool cgroup attach /sys/fs/cgroup/raph1/ cgroup_device id 80 (for example)
+
+cat /proc/self/cgroup
+
+nvidia-smi
+No devices were found
+
+bpftool cgroup detach /sys/fs/cgroup/raph1/ cgroup_device name bpf_prog1
+rm /sys/fs/bpf/prog1
+
+
+// TODO: see how to use a map and interact directly with userland to 
+// control which devices get allowed and denied
+
+// Should we attach with mode override or multi ? (cgroup attach flags) 
