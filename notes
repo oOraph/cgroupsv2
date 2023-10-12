@@ -38,3 +38,13 @@ rm /sys/fs/bpf/prog1
 // control which devices get allowed and denied
 
 // Should we attach with mode override or multi ? (cgroup attach flags) 
+
+Possibility to deny several devices with several multi attach
+
+# bpftool cgroup attach /sys/fs/cgroup/raph1/ cgroup_device name bpf_prog1 multi
+# bpftool cgroup attach /sys/fs/cgroup/raph1/ cgroup_device name bpf_prog2 multi
+
+# nvidia-smi 
+No devices were found
+# cat /dev/urandom 
+cat: /dev/urandom: Operation not permitted
