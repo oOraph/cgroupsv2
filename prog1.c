@@ -9,7 +9,7 @@
 
 #include <linux/bpf.h>
 #include <linux/version.h>
-#include <bpf/bpf_helpers.h>
+#include <bpf_helpers.h>
 
 SEC("cgroup/dev")
 int bpf_prog1(struct bpf_cgroup_dev_ctx *ctx)
@@ -49,7 +49,7 @@ int bpf_prog1(struct bpf_cgroup_dev_ctx *ctx)
 	if (ctx->major != 195 || type != BPF_DEVCG_DEV_CHAR)
 		return 1;
 
-        // TODO: see how to use a map and interact directly with userland to 
+        // TODO: see how to use a map and interact directly with userland to
         // control which devices get allowed and denied
 	switch (ctx->minor) {
 	case 0: /* 195:0 /dev/nvidia0 */
