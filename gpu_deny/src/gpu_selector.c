@@ -1,10 +1,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <bpf/bpf.h>
 
 int main(int argc, char **argv) {
-    char pathname[] = "/sys/fs/bpf/map1";
+    char pathname[] = "/sys/fs/bpf/gpu_deny_map";
     printf("Loading map in userland\n");
     int fd = bpf_obj_get(pathname);
     if (fd < 0) {
