@@ -1,6 +1,7 @@
 mkdir /sys/fs/cgroup/raph1
 mkdir ~/bpf
 apt-get install libbpf-dev clang linux-tools-aws
+apt-get install llvm libelf-dev libpcap-dev gcc-multilib build-essential
 (reboot needed if running kernel is not the latest one installed)
 clang -O2 -target bpf -c prog1.c -o prog1.o
 
@@ -40,19 +41,19 @@ bpftool cgroup detach /sys/fs/cgroup/raph1/ cgroup_device name bpf_prog1
 rm /sys/fs/bpf/prog1
 
 
-// TODO: see how to use a map and interact directly with userland to 
+// TODO: see how to use a map and interact directly with userland to
 // control which devices get allowed and denied
 
-// Should we attach with mode override or multi ? (cgroup attach flags) 
+// Should we attach with mode override or multi ? (cgroup attach flags)
 
 Possibility to deny several devices with several multi attach
 
 # bpftool cgroup attach /sys/fs/cgroup/raph1/ cgroup_device name bpf_prog1 multi
 # bpftool cgroup attach /sys/fs/cgroup/raph1/ cgroup_device name bpf_prog2 multi
 
-# nvidia-smi 
+# nvidia-smi
 No devices were found
-# cat /dev/urandom 
+# cat /dev/urandom
 cat: /dev/urandom: Operation not permitted
 
 
@@ -66,23 +67,29 @@ root@ip-172-31-41-106:~/bpf# bpftool map list
 	pids bpftool(20409)
 29: array  name libbpf_det_bind  flags 0x0
 	key 4B  value 32B  max_entries 1  memlock 4096B
-	
-	
+
+
 git clone https://github.com/libbpf/libbpf.git
 cd libbpf/src
 make
 
 
-TODO: clarify why with my libbpf does not work, probably not correctly built
-gcc -Wall -g  -L../xdp-tutorial/libbpf/src/ -o updater updater.c -l:libbpf.a -lelf
-
-
-root@ip-172-31-41-106:~/bpf# bpftool prog load ./prog4.o /sys/fs/bpf/prog4 type cgroup/dev
-root@ip-172-31-41-106:~/bpf# bpftool cgroup attach /sys/fs/cgroup/raph1/ cgroup_device name bpf_prog2 multi
-root@ip-172-31-41-106:~/bpf# bpftool map pin name raph_map /sys/fs/bpf/map1
-root@ip-172-31-41-106:~/bpf# ./updater 
+# bpftool prog load ./prog4.o /sys/fs/bpf/prog4 type cgroup/dev
+# bpftool cgroup attach /sys/fs/cgroup/raph1/ cgroup_device name bpf_prog2 multi
+# bpftool map pin name raph_map /sys/fs/bpf/map1
+# ./updater
 Loading map in userland
 major 195 minor 0
-root@ip-172-31-41-106:~/bpf# bpftool prog tracelog
+# bpftool prog tracelog
 
 
+# bpftool cgroup list /sys/fs/cgroup/raph1
+
+
+Questions that remain to be answered:
+
+When the space is created this ends up with a kub deployment + pod creation + containerd.
+How to make sure the bpf program gets loaded at the container creation in kube
+-> Init container (not ideal) ? -> Directement appliquer le deny au cgroup commun /kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podc958ac65_e247_4056_8fbb_d0a92501c49c.slice/
+-> nvidia-containerd runtime wrapper (which is already a containerd wrapper) ? -> yes could be a good solution
+-> nvidia-containerd amend

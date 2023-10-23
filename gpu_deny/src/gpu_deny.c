@@ -5,6 +5,8 @@
  * License as published by the Free Software Foundation.
  */
 
+// BPF common program
+
 #include <linux/bpf.h>
 #include <linux/version.h>
 #include <bpf/bpf_helpers.h>

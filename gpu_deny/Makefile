@@ -10,7 +10,7 @@ CLANG ?= clang
 CC ?= gcc
 
 DEBUG ?= 0
-BPF_FLAGS ?= -I$(LIBBPF_DIR)/build/usr/include/ -O2 -g -target bpf
+BPF_FLAGS ?= -I/usr/include/x86_64-linux-gnu/ -I$(LIBBPF_DIR)/build/usr/include/ -O2 -g -target bpf
 CFLAGS ?= -Wall -I$(LIBBPF_DIR)/build/usr/include/ -g
 LDFLAGS ?= -L$(LIBBPF_DIR)
 LIBS = -l:libbpf.a -lelf -lz
