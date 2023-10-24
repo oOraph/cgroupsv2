@@ -18,7 +18,7 @@
     i = idx; \
     v = (unsigned long long *) bpf_map_lookup_elem(&gpu_deny_map, &i); \
     if (v == 0 || *v == 0) { \
-        bpf_trace_printk(nomap, sizeof(nomap)); \
+        bpf_trace_printk(nomap, sizeof(nomap), i); \
         bpf_trace_printk(denied, sizeof(denied)); \
         return 0; \
     } \
@@ -46,7 +46,7 @@ int gpu_deny(struct bpf_cgroup_dev_ctx *ctx)
     char debug1[] = "%d:%d found in map\n";
     char denied[] = "device access denied\n";
     char permitted[] = "device access permitted\n";
-    char nomap[] = "no map or no entries in map\n";
+    char nomap[] = "no map or no entry index %d in map\n";
 
 #ifdef DEBUG
 	switch (type) {
