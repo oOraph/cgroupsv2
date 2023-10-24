@@ -14,7 +14,7 @@
 // Ugh -> for loops not well supported in bpf even when bounded. Should work when bounded, dunno why.
 // Ugly workaround
 // v = (struct myval *) bpf_map_lookup_elem(&raph_map, &i);
-#define MYITER(idx) \
+#define MYITERDBG(idx) \
     i = idx; \
     v = (unsigned long long *) bpf_map_lookup_elem(&gpu_deny_map, &i); \
     if (v == 0 || *v == 0) { \
@@ -30,6 +30,18 @@
         return 1; \
     }
 
+#define MYITER(idx) \
+    i = idx; \
+    v = (unsigned long long *) bpf_map_lookup_elem(&gpu_deny_map, &i); \
+    if (v == 0 || *v == 0) { \
+        return 0; \
+    } \
+    minor = (unsigned int) *v; \
+    major = (unsigned int) (*v >> 32); \
+    if(ctx->major == major && ctx->minor == minor) { \
+        return 1; \
+    }
+
 struct {
         __uint(type, BPF_MAP_TYPE_ARRAY);
         __type(key, int);
@@ -42,13 +54,15 @@ int gpu_deny(struct bpf_cgroup_dev_ctx *ctx)
 {
 	short type = ctx->access_type & 0xFFFF;
     short access = ctx->access_type >> 16;
-	char fmt[] = "  %d:%d    \n";
+
+#ifdef DEBUG
+    char fmt[] = "  %d:%d    \n";
     char debug1[] = "%d:%d found in map\n";
     char denied[] = "device access denied\n";
     char permitted[] = "device access permitted\n";
     char nomap[] = "no map or no entry index %d in map\n";
+    char noway[] = "no way you mknod anything !\n";
 
-#ifdef DEBUG
 	switch (type) {
 	case BPF_DEVCG_DEV_BLOCK:
 		fmt[0] = 'b';
@@ -73,6 +87,14 @@ int gpu_deny(struct bpf_cgroup_dev_ctx *ctx)
 	bpf_trace_printk(fmt, sizeof(fmt), ctx->major, ctx->minor);
 #endif
 
+    if(access & BPF_DEVCG_ACC_MKNOD) {
+#ifdef DEBUG
+        bpf_trace_printk(noway, sizeof(noway));
+        bpf_trace_printk(denied, sizeof(denied));
+#endif
+        return 0;
+    }
+
     // Shortcut we only want to consider nvidia devices except (/dev/nvidiactl, /dev/nvidia-modeset)
 	if (ctx->major != 195 || type != BPF_DEVCG_DEV_CHAR ||
         (ctx->major == 195 && (ctx->minor == 255 || ctx->minor == 254))) {
@@ -86,6 +108,19 @@ int gpu_deny(struct bpf_cgroup_dev_ctx *ctx)
     unsigned long long *v;
     unsigned int major, minor;
 
+#ifdef DEBUG
+    MYITERDBG(0)
+    MYITERDBG(1)
+    MYITERDBG(2)
+    MYITERDBG(3)
+    MYITERDBG(4)
+    MYITERDBG(5)
+    MYITERDBG(6)
+    MYITERDBG(7)
+    MYITERDBG(8)
+    MYITERDBG(9)
+    bpf_trace_printk(denied, sizeof(denied));
+#else
     // We can add up to 10 devices
     MYITER(0)
     MYITER(1)
@@ -97,9 +132,6 @@ int gpu_deny(struct bpf_cgroup_dev_ctx *ctx)
     MYITER(7)
     MYITER(8)
     MYITER(9)
-
-#ifdef DEBUG
-    bpf_trace_printk(denied, sizeof(denied));
 #endif
 	return 0;
 }
