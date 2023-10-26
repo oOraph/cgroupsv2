@@ -1,6 +1,15 @@
 #!/bin/bash
 
+# Make sure the following script is found earlier in
+# the PATH than the original one and it will be used
+# Set it in /usr/local/bin/ for example
+# Alternatively you can specify the bin path
+# in the [nvidia-container-cli] section in
+# /etc/nvidia-container-runtime/config.toml
+
 set -ex -o pipefail -u
+
+CONTAINER_CLI_PATH=${CONTAINER_CLI_PATH:-/usr/bin/nvidia-container-cli}
 
 exit_trap () {
   local lc="$BASH_COMMAND" rc=$?
@@ -21,7 +30,7 @@ trap exit_trap EXIT
 
     echo Cgroup path $cgroupPath
 
-    /usr/bin/nvidia-container-cli.real $@
+    $CONTAINER_CLI_PATH $@
 
     gpuacl $cgroupPath
-} > /tmp/log1.log 2>/tmp/log1.err
+} > /tmp/log1.log 2>&1
