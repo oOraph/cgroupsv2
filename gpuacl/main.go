@@ -91,12 +91,6 @@ func (p *program) init() {
 
 	// From then on we're dealing with char devices whose major is 195
 
-	// Minor == 255, accept
-	p.insts = append(p.insts, asm.JEq.Imm(asm.R5, NvidiaCtlMinor, p.programSymbol(AcceptDevice)))
-
-	// Minor == 254, accept
-	p.insts = append(p.insts, asm.JEq.Imm(asm.R5, NvidiaModesetMinor, p.programSymbol(AcceptDevice)))
-
 	// Mknod permission requested, no way, let's recycle R2 as we won't need the device type anymore
 	// as we now know it's a char device
 	mknodAccess := int32(unix.BPF_DEVCG_ACC_MKNOD)
@@ -104,6 +98,12 @@ func (p *program) init() {
 	p.insts = append(p.insts, asm.And.Imm32(asm.R2, mknodAccess))
 	p.insts = append(p.insts,
 		asm.JNE.Imm(asm.R2, 0, p.programSymbol(DenyDevice)))
+
+	// Minor == 255, accept
+	p.insts = append(p.insts, asm.JEq.Imm(asm.R5, NvidiaCtlMinor, p.programSymbol(AcceptDevice)))
+
+	// Minor == 254, accept
+	p.insts = append(p.insts, asm.JEq.Imm(asm.R5, NvidiaModesetMinor, p.programSymbol(AcceptDevice)))
 
 	// Now we know that we are dealing with gpu access request and with rw access requests only
 	// Now program is initialized ready to accept any specified gpu and deny any others
