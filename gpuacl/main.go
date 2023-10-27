@@ -310,8 +310,6 @@ func main() {
 		cgroupPath = cgroupPath[0 : len(cgroupPath)-1]
 	}
 
-	// Sanitize
-
 	indexesLen := len(argv) - 1
 	indexes := make([]uint32, 0, indexesLen)
 	if indexesLen > 0 {
