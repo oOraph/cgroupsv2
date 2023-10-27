@@ -5,6 +5,7 @@ package main
 
 // Inspired from https://github.com/NVIDIA/libnvidia-container/blob/main/src/nvcgo/internal/cgroup/ebpf.go
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -40,9 +41,38 @@ func loadSpec(path string) (spec *RuntimeSpec) {
 		log.Panicln("could not decode OCI spec:", err)
 	}
 	if spec.Process == nil {
-		log.Panicf("Process section is empty in OCI spec %v", spec)
+		log.Panicln("Process section is empty in OCI spec", spec)
 	}
 	return spec
+}
+
+func getPidCgroup(pid int) string {
+	path := fmt.Sprintf("/proc/%d/cgroup", pid)
+	f, err := os.Open(path)
+	if err != nil {
+		log.Panicf("could not open file %s: details %v\n", path, err)
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanLines)
+
+	// Loop through the file looking for either a '' (i.e. unified) entry.
+	for scanner.Scan() {
+		// Split each entry by ':'
+		parts := strings.SplitN(scanner.Text(), ":", 3)
+		if len(parts) != 3 {
+			log.Panicln("Malformed cgroup entry: %v", scanner.Text())
+		}
+		// Look for the (empty) subsystem in the 1st element.
+		if parts[1] != "" {
+			continue
+		}
+		return filepath.Join("/sys/fs/cgroup/", parts[2])
+	}
+
+	log.Panicln("Unable to get main cgroup from file !")
+	return ""
 }
 
 func main() {
@@ -120,8 +150,18 @@ func main() {
 	log.Println("Output: ", string(out))
 
 	if shouldDeny {
-		getPidCgroup(pid)
+		cgroupPath := getPidCgroup(state.Pid)
+		log.Printf("Cgroup path %s\n", cgroupPath)
+		if _, err := os.Stat(cgroupPath); err != nil {
+			log.Panicf("Error reading cgroup %s. Details %v", cgroupPath, err)
+		}
+		cmd := exec.Command("gpuacl", cgroupPath)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Panicf("Could not run command:\ncmd: %s\ndetails: err %v out %s",
+				cmd, err, out)
+		}
+		log.Printf("GPU correctly denied to cgroup %s", cgroupPath)
 	}
-
-	fmt.Printf("Pid to consider %d", pid)
+	log.Panic("OHHHHHHHHHHHHHH YEAH")
 }
