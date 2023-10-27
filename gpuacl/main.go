@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"runtime"
 	"strconv"
 	"unsafe"
@@ -303,6 +304,13 @@ func main() {
 	argv := os.Args[1:]
 
 	cgroupPath := argv[0]
+	re := regexp.MustCompile(`/+`)
+	cgroupPath = re.ReplaceAllString(cgroupPath, "/")
+	if len(cgroupPath) > 0 && (cgroupPath[len(cgroupPath)-1:] == "/") {
+		cgroupPath = cgroupPath[0 : len(cgroupPath)-1]
+	}
+
+	// Sanitize
 
 	indexesLen := len(argv) - 1
 	indexes := make([]uint32, 0, indexesLen)

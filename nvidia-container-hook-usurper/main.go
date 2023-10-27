@@ -29,7 +29,7 @@ type RuntimeSpec struct {
 	Process *Process `json:"process,omitempty"`
 }
 
-func loadSpec(path string) (spec *RuntimeSpec) {
+func loadSpec(path string) RuntimeSpec {
 	// We do not extract everything, just what is of interest for us (env vars)
 	f, err := os.Open(path)
 	if err != nil {
@@ -37,8 +37,9 @@ func loadSpec(path string) (spec *RuntimeSpec) {
 	}
 	defer f.Close()
 
-	if err = json.NewDecoder(f).Decode(spec); err != nil {
-		log.Panicln("could not decode OCI spec:", err)
+	spec := RuntimeSpec{}
+	if err = json.NewDecoder(f).Decode(&spec); err != nil {
+		log.Panicln("could not decode OCI spec:", err, spec)
 	}
 	if spec.Process == nil {
 		log.Panicln("Process section is empty in OCI spec", spec)
@@ -62,7 +63,7 @@ func getPidCgroup(pid int) string {
 		// Split each entry by ':'
 		parts := strings.SplitN(scanner.Text(), ":", 3)
 		if len(parts) != 3 {
-			log.Panicln("Malformed cgroup entry: %v", scanner.Text())
+			log.Panicf("Malformed cgroup entry: %v\n", scanner.Text())
 		}
 		// Look for the (empty) subsystem in the 1st element.
 		if parts[1] != "" {
@@ -163,5 +164,4 @@ func main() {
 		}
 		log.Printf("GPU correctly denied to cgroup %s", cgroupPath)
 	}
-	log.Panic("OHHHHHHHHHHHHHH YEAH")
 }
