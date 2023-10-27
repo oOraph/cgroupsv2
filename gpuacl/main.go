@@ -325,7 +325,7 @@ func main() {
 		}
 	}
 	hash := md5.Sum([]byte(cgroupPath))
-	prgmName := hex.EncodeToString(hash[:])[0:15]
+	prgmName := "gpuacl" + hex.EncodeToString(hash[:])[0:8]
 	prgm := program{
 		name: prgmName,
 	}
